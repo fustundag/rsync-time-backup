@@ -37,6 +37,7 @@ fn_parse_date() {
 	# Converts YYYY-MM-DD-HHMMSS to YYYY-MM-DD HH:MM:SS and then to Unix Epoch.
 	case "$OSTYPE" in
 		linux*) date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s ;;
+		cygwin*) date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s ;;
 		darwin*) date -j -f "%Y-%m-%d-%H%M%S" "$1" "+%s" ;;
 	esac
 }
@@ -54,7 +55,7 @@ fn_expire_backup() {
 	fi
 
 	fn_log_info "Expiring $1"
-	fn_rm "$1"
+	rm -rf -- "$1"
 }
 
 fn_parse_ssh() {
@@ -140,7 +141,7 @@ if [ -z "$(fn_find_backup_marker "$DEST_FOLDER")" ]; then
 	fn_log_info "Safety check failed - the destination does not appear to be a backup folder or drive (marker file not found)."
 	fn_log_info "If it is indeed a backup folder, you may add the marker file by running the following command:"
 	fn_log_info ""
-	fn_log_info_cmd "touch \"$(fn_backup_marker_path "$DEST_FOLDER")\""
+	fn_log_info_cmd "mkdir -p -- \"$DEST_FOLDER\" ; touch \"$(fn_backup_marker_path "$DEST_FOLDER")\""
 	fn_log_info ""
 	exit 1
 fi
@@ -297,7 +298,7 @@ while : ; do
 		fi
 
 		fn_expire_backup "$(fn_find_backups | tail -n 1)"
-
+ 
 		# Resume backup
 		continue
 	fi
@@ -305,6 +306,7 @@ while : ; do
 	# -----------------------------------------------------------------------------
 	# Check whether rsync reported any errors
 	# -----------------------------------------------------------------------------
+	
 	if [ -n "$(grep "rsync:" "$LOG_FILE")" ]; then
 		fn_log_warn "Rsync reported a warning, please check '$LOG_FILE' for more details."
 	fi
